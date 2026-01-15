@@ -3,22 +3,22 @@ import useDigitalTwinStore from '../store/useDigitalTwinStore';
 import useDeviceStore from '../store/useDeviceStore';
 import useAuthStore from '../store/useAuthStore';
 import socketService from '../services/socketService';
-import Sidebar from '../components/Layout/Sidebar';
-import Header from '../components/Layout/Header';
-import ChatPanel from '../components/Communication/ChatPanel';
-import AdminDashboard from '../components/Views/AdminDashboard';
-import OperatorDashboard from '../components/Views/OperatorDashboard';
-import ViewerDashboard from '../components/Views/ViewerDashboard';
-import DashboardView from '../components/Views/DashboardView';
-import ModelViewer from '../components/3D/ModelViewer';
-import AnalyticsView from '../components/Views/AnalyticsView';
-import PredictiveAnalyticsView from '../components/Views/PredictiveAnalyticsView';
-import DataComparisonView from '../components/Views/DataComparisonView';
-import DeviceManager from '../components/DeviceManagement/DeviceManager';
-import EmployeeManager from '../components/EmployeeManagement/EmployeeManager';
-import AlertConfiguration from '../components/Alerts/AlertConfiguration';
-import MonitoringView from '../components/Views/MonitoringView';
-import SettingsView from '../components/Views/SettingsView';
+import Sidebar from "../Components/Layout/Sidebar";
+import Header from '../Components/Layout/Header';
+import ChatPanel from '../Components/Communication/ChatPanel';
+import AdminDashboard from '../Components/Views/AdminDashboard';
+import OperatorDashboard from '../Components/Views/OperatorDashboard';
+import ViewerDashboard from '../Components/Views/ViewerDashboard';
+import DashboardView from '../Components/Views/DashboardView';
+import ModelViewer from '../Components/3D/ModelViewer';
+import AnalyticsView from '../Components/Views/AnalyticsView';
+import PredictiveAnalyticsView from '../Components/Views/PredictiveAnalyticsView';
+import DataComparisonView from '../Components/Views/DataComparisonView';
+import DeviceManager from '../Components/DeviceManagement/DeviceManager';
+import EmployeeManager from '../Components/EmployeeManagement/EmployeeManager';
+import AlertConfiguration from '../Components/Alerts/AlertConfiguration';
+import MonitoringView from '../Components/Views/MonitoringView';
+import SettingsView from '../Components/Views/SettingsView';
 import { ROLES } from '../store/useAuthStore';
 
 function DigitalTwinPage() {
@@ -35,7 +35,7 @@ function DigitalTwinPage() {
     const cleanup = socketService.startSimulation((data) => {
       // Update main store
       updateSensorData(data, selectedDeviceId);
-      
+
       // Update selected device
       if (selectedDeviceId) {
         updateDeviceSensorData(selectedDeviceId, data);
