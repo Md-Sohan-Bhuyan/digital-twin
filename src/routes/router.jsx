@@ -34,7 +34,7 @@ const router = createBrowserRouter([
   {
     path: "/*",
     element: (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <h1 className="text-white text-center text-2xl">404 Not Found</h1>
       </div>
     ),
