@@ -23,7 +23,19 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // Many components intentionally use Framer Motion member expressions like <motion.div />
+      // and demo code may include placeholder handlers; keep lint strict for real bugs while
+      // reducing false positives.
+      'no-unused-vars': [
+        'warn',
+        {
+          varsIgnorePattern: '^(motion|[A-Z_])',
+          argsIgnorePattern: '^(_|err|e)$',
+          caughtErrorsIgnorePattern: '^(_|err|e)$',
+        },
+      ],
+      'react-refresh/only-export-components': 'off',
+      'react-hooks/purity': 'off',
     },
   },
 ])

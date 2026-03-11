@@ -3,12 +3,15 @@ import { Menu, Bell, Search, User, LogOut, Settings, MessageSquare } from 'lucid
 import useDigitalTwinStore from '../../store/useDigitalTwinStore';
 import useAuthStore from '../../store/useAuthStore';
 import useChatStore from '../../store/useChatStore';
+import useRealtimeStore from '../../store/useRealtimeStore';
 import { motion } from 'framer-motion';
+import { timeAgo } from '../../utils/realtimeUtils';
 
 function Header({ onChatClick }) {
-  const { toggleSidebar, sensorData, toggleNotificationCenter } = useDigitalTwinStore();
+  const { toggleSidebar, sensorData, toggleNotificationCenter, uiState } = useDigitalTwinStore();
   const { user, logout } = useAuthStore();
   const { unreadCount, getUnreadCount } = useChatStore();
+  const { connection } = useRealtimeStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef(null);
 
@@ -71,6 +74,33 @@ function Header({ onChatClick }) {
                   <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
                   Warning
                 </span>
+              )}
+            </span>
+            <span className="text-gray-500 text-sm">|</span>
+            <span className="text-gray-400 text-sm flex items-center gap-2">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  connection.status === 'connected'
+                    ? 'bg-green-500'
+                    : connection.status === 'connecting'
+                    ? 'bg-blue-500 animate-pulse'
+                    : connection.status === 'error'
+                    ? 'bg-red-500'
+                    : 'bg-gray-500'
+                }`}
+              />
+              <span className="capitalize">{connection.status}</span>
+              {connection.latencyMs != null && (
+                <span className="text-gray-500">({connection.latencyMs}ms)</span>
+              )}
+              {uiState?.realtime?.effectiveHz != null && (
+                <span className="text-gray-500">· {uiState.realtime.effectiveHz}Hz</span>
+              )}
+              {uiState?.realtime?.jitterMs != null && (
+                <span className="text-gray-500">· ±{uiState.realtime.jitterMs}ms</span>
+              )}
+              {uiState?.realtime?.lastSensorUpdateAt && (
+                <span className="text-gray-500">· {timeAgo(uiState.realtime.lastSensorUpdateAt)}</span>
               )}
             </span>
           </div>

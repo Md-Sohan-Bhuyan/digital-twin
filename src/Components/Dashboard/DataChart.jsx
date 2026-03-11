@@ -22,7 +22,12 @@ function DataChart({ data, type = 'line', dataKey, color = '#4ecdc4', name }) {
   }));
 
   return (
-    <div className="bg-black/40 backdrop-blur-sm rounded-xl p-6 border border-white/10 h-full">
+    <div
+      data-cursor="chart"
+      data-cursor-tooltip={name || 'Chart'}
+      data-cursor-preview={`${dataKey || 'metric'} · ${type}`}
+      className="bg-black/40 backdrop-blur-sm rounded-xl p-6 border border-white/10 h-full hover:border-white/20 hover:shadow-2xl hover:shadow-black/30 transition-all"
+    >
       <h3 className="text-white text-lg font-semibold mb-4">{name || 'Data Trend'}</h3>
       <ResponsiveContainer width="100%" height="100%">
         <ChartComponent data={formattedData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>

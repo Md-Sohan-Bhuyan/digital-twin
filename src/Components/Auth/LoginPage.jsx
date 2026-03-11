@@ -1,30 +1,45 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { LogIn, Lock, Mail, Eye, EyeOff, HelpCircle } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 import ForgotPassword from './ForgotPassword';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema } from '../../utils/validationSchemas';
+import { useNavigate } from 'react-router';
 
 function LoginPage({ onLoginSuccess }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const login = useAuthStore((state) => state.login);
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const schema = useMemo(() => loginSchema, []);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setValue,
+  } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: { email: '', password: '' },
+    mode: 'onChange',
+  });
+
+  const onSubmit = async (values) => {
     setError('');
-    setLoading(true);
+    setSuccess('');
+    setLoading(true); // keep existing UI behavior
 
     try {
-      const result = login(email, password);
+      const result = login(values.email, values.password);
       if (result.success) {
-        // Redirect to dashboard
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 500);
+        setSuccess('Signed in successfully');
+        onLoginSuccess?.(result.user);
+        setTimeout(() => navigate('/dashboard', { replace: true }), 300);
       } else {
         setError(result.error || 'Invalid credentials');
       }
@@ -63,7 +78,7 @@ function LoginPage({ onLoginSuccess }) {
           <p className="text-gray-400">Sign in to access the dashboard</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Email Address
@@ -72,13 +87,15 @@ function LoginPage({ onLoginSuccess }) {
               <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@digitaltwin.com"
                 className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
+                {...register('email')}
+                aria-invalid={errors.email ? 'true' : 'false'}
               />
             </div>
+            {errors.email && (
+              <p className="mt-2 text-sm text-red-300">{errors.email.message}</p>
+            )}
           </div>
 
           <div>
@@ -89,11 +106,10 @@ function LoginPage({ onLoginSuccess }) {
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 className="w-full pl-10 pr-12 py-3 bg-gray-900/50 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
+                {...register('password')}
+                aria-invalid={errors.password ? 'true' : 'false'}
               />
               <button
                 type="button"
@@ -103,7 +119,20 @@ function LoginPage({ onLoginSuccess }) {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
+            {errors.password && (
+              <p className="mt-2 text-sm text-red-300">{errors.password.message}</p>
+            )}
           </div>
+
+          {success && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-green-500/20 border border-green-500/50 rounded-lg p-3 text-green-300 text-sm"
+            >
+              {success}
+            </motion.div>
+          )}
 
           {error && (
             <motion.div
@@ -117,7 +146,7 @@ function LoginPage({ onLoginSuccess }) {
 
           <motion.button
             type="submit"
-            disabled={loading}
+            disabled={loading || isSubmitting}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -150,9 +179,36 @@ function LoginPage({ onLoginSuccess }) {
         <div className="mt-6 pt-6 border-t border-white/10">
           <p className="text-xs text-gray-500 text-center mb-2">Demo Credentials:</p>
           <div className="space-y-1 text-xs text-gray-400">
-            <p>Admin: admin@digitaltwin.com / password123</p>
-            <p>Operator: operator@digitaltwin.com / password123</p>
-            <p>Viewer: viewer@digitaltwin.com / password123</p>
+            <button
+              type="button"
+              className="block w-full text-left hover:text-white transition-colors"
+              onClick={() => {
+                setValue('email', 'admin@digitaltwin.com');
+                setValue('password', 'password123');
+              }}
+            >
+              Admin: admin@digitaltwin.com / password123
+            </button>
+            <button
+              type="button"
+              className="block w-full text-left hover:text-white transition-colors"
+              onClick={() => {
+                setValue('email', 'operator@digitaltwin.com');
+                setValue('password', 'password123');
+              }}
+            >
+              Operator: operator@digitaltwin.com / password123
+            </button>
+            <button
+              type="button"
+              className="block w-full text-left hover:text-white transition-colors"
+              onClick={() => {
+                setValue('email', 'viewer@digitaltwin.com');
+                setValue('password', 'password123');
+              }}
+            >
+              Viewer: viewer@digitaltwin.com / password123
+            </button>
           </div>
         </div>
       </motion.div>

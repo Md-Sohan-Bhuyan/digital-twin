@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, ArrowLeft, CheckCircle, AlertCircle, Loader } from 'lucide-react';
-import { format } from 'date-fns';
+import { forgotPasswordEmailSchema, otpSchema, resetPasswordSchema } from '../../utils/validationSchemas';
 
 // In-memory password reset tokens (In production, use backend)
 const resetTokens = new Map();
@@ -15,6 +15,7 @@ function ForgotPassword({ onBackToLogin, onResetComplete }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [demoOtp, setDemoOtp] = useState(null);
 
   // Generate OTP
   const generateOTP = () => {
@@ -23,13 +24,16 @@ function ForgotPassword({ onBackToLogin, onResetComplete }) {
 
   // Step 1: Send OTP to email
   const handleSendOTP = async () => {
-    if (!email) {
-      setError('Please enter your email address');
+    const parsed = forgotPasswordEmailSchema.safeParse({ email });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message || 'Please enter a valid email address');
       return;
     }
 
     setLoading(true);
     setError('');
+    setSuccess('');
+    setDemoOtp(null);
     
     // Simulate API call
     setTimeout(() => {
@@ -43,11 +47,8 @@ function ForgotPassword({ onBackToLogin, onResetComplete }) {
         expiresAt: Date.now() + 10 * 60 * 1000,
       });
 
-      // In production, send email with OTP
-      console.log(`OTP for ${email}: ${otpCode}`); // For demo purposes
-      
-      // Show OTP in alert for demo
-      alert(`Demo OTP for ${email}: ${otpCode}\n\nIn production, this would be sent via email.`);
+      // Demo-only: reveal OTP inline
+      setDemoOtp(otpCode);
       
       setSuccess('OTP sent to your email address');
       setStep(2);
@@ -57,13 +58,15 @@ function ForgotPassword({ onBackToLogin, onResetComplete }) {
 
   // Step 2: Verify OTP
   const handleVerifyOTP = () => {
-    if (!otp) {
-      setError('Please enter the OTP');
+    const parsed = otpSchema.safeParse({ otp });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message || 'Please enter a valid OTP');
       return;
     }
 
     setLoading(true);
     setError('');
+    setSuccess('');
 
     const tokenData = resetTokens.get(email);
     
@@ -93,23 +96,15 @@ function ForgotPassword({ onBackToLogin, onResetComplete }) {
 
   // Step 3: Reset Password
   const handleResetPassword = () => {
-    if (!newPassword || !confirmPassword) {
-      setError('Please fill in all fields');
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters long');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
+    const parsed = resetPasswordSchema.safeParse({ newPassword, confirmPassword });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message || 'Please check your password');
       return;
     }
 
     setLoading(true);
     setError('');
+    setSuccess('');
 
     const tokenData = resetTokens.get(email);
     
@@ -150,6 +145,7 @@ function ForgotPassword({ onBackToLogin, onResetComplete }) {
     setOtp('');
     setError('');
     setSuccess('');
+    setDemoOtp(null);
   };
 
   return (
@@ -259,6 +255,11 @@ function ForgotPassword({ onBackToLogin, onResetComplete }) {
               <p className="text-gray-400 text-xs mt-2 text-center">
                 OTP sent to: {email}
               </p>
+              {demoOtp && (
+                <p className="text-blue-300 text-xs mt-2 text-center">
+                  Demo OTP: <span className="font-mono tracking-widest">{demoOtp}</span>
+                </p>
+              )}
             </div>
             <div className="flex gap-2">
               <motion.button

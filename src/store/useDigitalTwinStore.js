@@ -28,6 +28,13 @@ const useDigitalTwinStore = create((set, get) => ({
     selectedView: 'dashboard',
     theme: 'dark',
     notificationCenterOpen: false,
+    realtime: {
+      updateIntervalMs: 2000,
+      paused: false,
+      lastSensorUpdateAt: null,
+      effectiveHz: null,
+      jitterMs: null,
+    },
     filters: {
       dateRange: null,
       sensorTypes: [],
@@ -71,10 +78,31 @@ const useDigitalTwinStore = create((set, get) => ({
   // Actions
   updateSensorData: (data, deviceId = null) => {
     const timestamp = new Date().toISOString();
+    const nowMs = Date.now();
+    const prevTs = get().uiState?.realtime?.lastSensorUpdateAt;
+    const prevMs = prevTs ? new Date(prevTs).getTime() : null;
+    const deltaMs = prevMs != null ? Math.max(0, nowMs - prevMs) : null;
+    const effectiveHz = deltaMs ? Math.round((1000 / deltaMs) * 10) / 10 : null;
     const currentData = get().sensorData;
     const newData = { ...currentData, ...data, timestamp };
 
     set({ sensorData: newData });
+    set((prev) => ({
+      // jitter: absolute deviation from configured interval (best-effort)
+      // when server pushes data, this approximates drift as well.
+      uiState: {
+        ...prev.uiState,
+        realtime: {
+          ...prev.uiState.realtime,
+          lastSensorUpdateAt: timestamp,
+          effectiveHz,
+          jitterMs:
+            deltaMs == null
+              ? prev.uiState.realtime.jitterMs
+              : Math.round(Math.abs(deltaMs - (prev.uiState.realtime.updateIntervalMs || 0))),
+        },
+      },
+    }));
 
     // Add to historical data (keep last 1000 entries for better analytics)
     const historical = get().historicalData;
@@ -121,6 +149,25 @@ const useDigitalTwinStore = create((set, get) => ({
   setSelectedView: (view) => {
     set((prev) => ({
       uiState: { ...prev.uiState, selectedView: view },
+    }));
+  },
+
+  setRealtimeUpdateIntervalMs: (updateIntervalMs) => {
+    const safe = Number.isFinite(updateIntervalMs) ? Math.max(250, Math.min(60000, updateIntervalMs)) : 2000;
+    set((prev) => ({
+      uiState: {
+        ...prev.uiState,
+        realtime: { ...prev.uiState.realtime, updateIntervalMs: safe },
+      },
+    }));
+  },
+
+  toggleRealtimePaused: () => {
+    set((prev) => ({
+      uiState: {
+        ...prev.uiState,
+        realtime: { ...prev.uiState.realtime, paused: !prev.uiState.realtime.paused },
+      },
     }));
   },
 

@@ -3,10 +3,14 @@ import { motion } from 'framer-motion';
 import { Bell, Database, Shield, Palette, Download, FileText, FileSpreadsheet, FileJson } from 'lucide-react';
 import useDigitalTwinStore from '../../store/useDigitalTwinStore';
 import { exportToCSV, exportToJSON, exportToExcel, generatePDFReport } from '../../utils/exportUtils';
+import useToastStore from '../../store/useToastStore';
+import useActivityStore from '../../store/useActivityStore';
 
 function SettingsView() {
-  const { sensorData, historicalData } = useDigitalTwinStore();
+  const { sensorData, historicalData, uiState, setRealtimeUpdateIntervalMs } = useDigitalTwinStore();
   const [exportLoading, setExportLoading] = useState(false);
+  const pushToast = useToastStore((s) => s.pushToast);
+  const addActivity = useActivityStore((s) => s.addActivity);
 
   const handleExport = async (format) => {
     setExportLoading(true);
@@ -26,14 +30,31 @@ function SettingsView() {
           generatePDFReport(data, sensorData, {
             title: 'Digital Twin System Report',
             deviceName: 'Main System',
+            filename: 'digital-twin-report',
           });
           break;
         default:
           break;
       }
+      addActivity({
+        type: 'export',
+        description: `Exported data (${format.toUpperCase()})`,
+        severity: 'info',
+      });
+      pushToast({
+        type: 'success',
+        title: 'Export started',
+        message: `Preparing ${format.toUpperCase()} download…`,
+        durationMs: 2200,
+      });
     } catch (error) {
       console.error('Export error:', error);
-      alert('Failed to export data. Please try again.');
+      pushToast({
+        type: 'error',
+        title: 'Export failed',
+        message: 'Please try again.',
+        durationMs: 3500,
+      });
     } finally {
       setExportLoading(false);
     }
@@ -103,11 +124,34 @@ function SettingsView() {
             </div>
             <div>
               <label className="text-gray-300 text-sm mb-2 block">Update Frequency</label>
-              <select className="select select-bordered w-full bg-gray-700 text-white">
-                <option>Real-time</option>
-                <option>1 second</option>
-                <option>5 seconds</option>
+              <select
+                className="select select-bordered w-full bg-gray-700 text-white"
+                value={String(uiState?.realtime?.updateIntervalMs ?? 2000)}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  setRealtimeUpdateIntervalMs(next);
+                  addActivity({
+                    type: 'settings',
+                    description: `Realtime interval set to ${next}ms`,
+                    severity: 'info',
+                  });
+                  pushToast({
+                    type: 'info',
+                    title: 'Realtime updated',
+                    message: `Update interval: ${Math.round(next / 100) / 10}s`,
+                    durationMs: 1800,
+                  });
+                }}
+              >
+                <option value="250">Real-time (250ms)</option>
+                <option value="1000">1 second</option>
+                <option value="2000">2 seconds</option>
+                <option value="5000">5 seconds</option>
+                <option value="10000">10 seconds</option>
               </select>
+              <p className="text-gray-500 text-xs mt-2">
+                Applies instantly across dashboards, monitoring stream, analytics charts.
+              </p>
             </div>
           </div>
         </motion.div>

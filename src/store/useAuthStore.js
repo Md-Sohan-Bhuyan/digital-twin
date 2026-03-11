@@ -28,6 +28,7 @@ const useAuthStore = create(
       login: (email, password) => {
         // In production, this would call an API
         // For demo, we'll simulate authentication
+        const normalizedEmail = String(email || '').trim().toLowerCase();
         const users = {
           'admin@digitaltwin.com': { 
             id: 'admin-1', 
@@ -52,8 +53,20 @@ const useAuthStore = create(
           },
         };
 
-        const user = users[email];
-        if (user && password === 'password123') {
+        const user = users[normalizedEmail];
+
+        // Allow password override in demo via localStorage (used by Forgot Password flow)
+        let effectivePassword = 'password123';
+        try {
+          const localUsers = JSON.parse(localStorage.getItem('users') || '{}');
+          if (localUsers?.[normalizedEmail]?.password) {
+            effectivePassword = localUsers[normalizedEmail].password;
+          }
+        } catch {
+          // ignore
+        }
+
+        if (user && password === effectivePassword) {
           const token = `token_${Date.now()}`;
           set({
             user,

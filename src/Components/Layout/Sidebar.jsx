@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import useDigitalTwinStore from '../../store/useDigitalTwinStore';
 import useAuthStore, { ROLES } from '../../store/useAuthStore';
+import useRealtimeStore from '../../store/useRealtimeStore';
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: [ROLES.ADMIN, ROLES.OPERATOR, ROLES.VIEWER, ROLES.MAINTENANCE] },
@@ -35,6 +36,7 @@ const menuItems = [
 function Sidebar() {
   const { uiState, setSelectedView, toggleSidebar } = useDigitalTwinStore();
   const { user } = useAuthStore();
+  const { connection } = useRealtimeStore();
   
   // Filter menu items based on user role
   const filteredMenuItems = menuItems.filter((item) => {
@@ -95,6 +97,8 @@ function Sidebar() {
                     toggleSidebar();
                   }
                 }}
+                data-cursor="nav"
+                data-cursor-tooltip={item.label}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   isActive
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
@@ -128,8 +132,41 @@ function Sidebar() {
           <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-lg p-4 border border-blue-500/30">
             <p className="text-white text-sm font-semibold mb-1">System Status</p>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <p className="text-gray-400 text-xs">All Systems Operational</p>
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  connection.status === 'connected'
+                    ? 'bg-green-500 animate-pulse'
+                    : connection.status === 'connecting'
+                    ? 'bg-blue-500 animate-pulse'
+                    : connection.status === 'error'
+                    ? 'bg-red-500'
+                    : 'bg-gray-500'
+                }`}
+              />
+              <p className="text-gray-400 text-xs">
+                Realtime: <span className="capitalize">{connection.status}</span>
+                {connection.lastError ? (
+                  <span className="text-red-400"> · {connection.lastError}</span>
+                ) : null}
+              </p>
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <p className="text-gray-500 text-xs">
+                Interval: {Math.round((uiState.realtime.updateIntervalMs || 2000) / 100) / 10}s
+                {uiState?.realtime?.effectiveHz != null ? (
+                  <span className="text-gray-400"> · {uiState.realtime.effectiveHz}Hz</span>
+                ) : null}
+              </p>
+              <button
+                onClick={() => useDigitalTwinStore.getState().toggleRealtimePaused()}
+                className={`text-xs px-2 py-1 rounded border transition-colors ${
+                  uiState.realtime.paused
+                    ? 'border-yellow-500/50 text-yellow-300 bg-yellow-500/10 hover:bg-yellow-500/20'
+                    : 'border-white/10 text-gray-300 bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                {uiState.realtime.paused ? 'Resume' : 'Pause'}
+              </button>
             </div>
           </div>
         </div>

@@ -75,6 +75,7 @@ export const generatePDFReport = (data, metrics, options = {}) => {
     includeCharts = false,
     includeSummary = true,
     deviceName = 'System',
+    filename = 'digital-twin-report',
   } = options;
 
   const doc = new jsPDF();

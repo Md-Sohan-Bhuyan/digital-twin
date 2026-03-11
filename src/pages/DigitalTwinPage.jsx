@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import useDigitalTwinStore from '../store/useDigitalTwinStore';
 import useDeviceStore from '../store/useDeviceStore';
 import useAuthStore from '../store/useAuthStore';
@@ -32,22 +33,33 @@ function DigitalTwinPage() {
     socketService.connect();
 
     // Start receiving sensor data
-    const cleanup = socketService.startSimulation((data) => {
-      // Update main store
-      updateSensorData(data, selectedDeviceId);
+    const cleanup = uiState.realtime.paused
+      ? null
+      : socketService.startSimulation(
+          (data) => {
+            // Update main store
+            updateSensorData(data, selectedDeviceId);
 
-      // Update selected device
-      if (selectedDeviceId) {
-        updateDeviceSensorData(selectedDeviceId, data);
-      }
-    });
+            // Update selected device
+            if (selectedDeviceId) {
+              updateDeviceSensorData(selectedDeviceId, data);
+            }
+          },
+          { intervalMs: uiState.realtime.updateIntervalMs }
+        );
 
     // Cleanup on unmount
     return () => {
       cleanup?.();
       socketService.disconnect();
     };
-  }, [updateSensorData, selectedDeviceId, updateDeviceSensorData]);
+  }, [
+    updateSensorData,
+    selectedDeviceId,
+    updateDeviceSensorData,
+    uiState.realtime.updateIntervalMs,
+    uiState.realtime.paused,
+  ]);
 
   const renderView = () => {
     // Role-based dashboard routing
@@ -96,8 +108,19 @@ function DigitalTwinPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header onChatClick={() => setChatOpen(true)} />
-        <main className="flex-1 overflow-y-auto">
-          {renderView()}
+        <main className={`flex-1 ${uiState.selectedView === '3d-view' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={`${uiState.selectedView}-${user?.role || 'guest'}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className={uiState.selectedView === '3d-view' ? 'h-full' : 'min-h-full'}
+            >
+              {renderView()}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
       {chatOpen && <ChatPanel isOpen={chatOpen} onClose={() => setChatOpen(false)} />}

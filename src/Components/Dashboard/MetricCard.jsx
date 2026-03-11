@@ -36,7 +36,10 @@ function MetricCard({ type, value, unit, label, status = 'normal', trend = null 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={`${colors.bg} ${colors.border} border rounded-xl p-6 backdrop-blur-sm hover:scale-105 transition-transform duration-200`}
+      data-cursor="kpi"
+      data-cursor-tooltip={label}
+      data-cursor-preview={`${typeof value === 'number' ? value.toFixed(1) : value}${unit ? ` ${unit}` : ''} · ${status}`}
+      className={`${colors.bg} ${colors.border} border rounded-xl p-6 backdrop-blur-sm hover:scale-[1.03] hover:shadow-xl hover:shadow-black/30 transition-transform duration-200`}
     >
       <div className="flex items-start justify-between mb-4">
         <div className={`${colors.icon} p-3 rounded-lg bg-black/20`}>
